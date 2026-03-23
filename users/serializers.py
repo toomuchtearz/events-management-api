@@ -9,8 +9,10 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = (
             "id",
-            "username",
+            "email",
             "password",
+            "first_name",
+            "last_name"
         )
 
         extra_kwargs = {
@@ -19,6 +21,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                 "style": {"input_type": "password"},
                 "validators": [validate_password],
             },
+            "first_name": {"required": True, "allow_blank": False},
+            "last_name": {"required": True, "allow_blank": False},
         }
 
     def create(self, validated_data):
@@ -31,5 +35,8 @@ class ManageUserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = (
             "id",
-            "username",
+            "email",
+            "first_name",
+            "last_name",
         )
+        read_only_fields = ("email",)
