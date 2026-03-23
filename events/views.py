@@ -1,10 +1,13 @@
 from django.core.mail import send_mail
 from django.db.models import Count
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from events.filters import EventFilter
 from events.models import Event
 from events.permissions import IsOrganizerOrReadOnly
 
@@ -38,6 +41,16 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventListSerializer
     permission_classes = (IsAuthenticated, IsOrganizerOrReadOnly)
+
+    filter_backends = (
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    )
+    filterset_class = EventFilter
+
+    search_fields = ("title", "description")
+    ordering_fields = ("time", "title")
 
     def get_queryset(self):
         queryset = Event.objects.select_related("organizer").annotate(
