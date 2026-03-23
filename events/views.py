@@ -32,9 +32,6 @@ class EventViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class
         if self.action == "list":
             serializer = EventListSerializer
-        if self.action == "retrieve":
-            serializer = EventRetrieveSerializer
-
         return serializer
 
     @action(
@@ -48,7 +45,7 @@ class EventViewSet(viewsets.ModelViewSet):
         event = self.get_object()
         user = request.user
 
-        if user in event.attendees.all():
+        if event.attendees.filter(id=user.id).exists():
             event.attendees.remove(user)
             return Response({"detail": "Successfully unregistered from the event."}, status=status.HTTP_200_OK)
         else:
