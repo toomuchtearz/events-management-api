@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from django.db.models import Count
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
@@ -11,6 +12,26 @@ from events.serializers import (
     EventListSerializer,
     EventRetrieveSerializer
 )
+
+
+def send_event_registration_mail(user, event):
+    subject = f"Registration Confirmed: {event.title}"
+
+    message = (
+        f"Hi {user.full_name},\n\n"
+        f"You are officially registered for {event.title}!\n\n"
+        f"Location: {event.location}\n"
+        f"Time: {event.time.strftime('%b %d, %Y at %H:%M')}\n\n"
+        f"We look forward to seeing you there."
+    )
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=None,
+        recipient_list=[user.email],
+        fail_silently=True,
+    )
 
 
 class EventViewSet(viewsets.ModelViewSet):
@@ -29,28 +50,44 @@ class EventViewSet(viewsets.ModelViewSet):
         serializer.save(organizer=self.request.user)
 
     def get_serializer_class(self):
-        serializer = self.serializer_class
         if self.action == "list":
-            serializer = EventListSerializer
-        return serializer
+            return EventListSerializer
+        if self.action == "toggle_register":
+            return serializers.Serializer
+        return EventRetrieveSerializer
 
     @action(
         detail=True,
         methods=["POST"],
         permission_classes=(IsAuthenticated,),
-        serializer_class=serializers.Serializer,
         url_path="toggle-register"
     )
     def toggle_register(self, request, pk=None):
         event = self.get_object()
         user = request.user
 
+        if event.organizer == user:
+            return Response(
+                {"detail": "You cannot register for your own event."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if event.attendees.filter(id=user.id).exists():
             event.attendees.remove(user)
-            return Response({"detail": "Successfully unregistered from the event."}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Successfully unregistered from the event."},
+                status=status.HTTP_200_OK
+            )
         else:
             event.attendees.add(user)
-            return Response({"detail": "Successfully registered for the event."}, status=status.HTTP_200_OK)
+            send_event_registration_mail(
+                user=user, event=event
+            )
+
+            return Response(
+                {"detail": "Successfully registered for the event."},
+                status=status.HTTP_200_OK
+            )
 
 
     @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
@@ -58,7 +95,7 @@ class EventViewSet(viewsets.ModelViewSet):
         my_events = self.get_queryset().filter(organizer=request.user)
         serializer = self.get_serializer(my_events, many=True)
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
@@ -66,4 +103,4 @@ class EventViewSet(viewsets.ModelViewSet):
         attending_events = self.get_queryset().filter(attendees=request.user)
         serializer = self.get_serializer(attending_events, many=True)
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
