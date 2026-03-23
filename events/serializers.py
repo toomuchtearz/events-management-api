@@ -4,9 +4,7 @@ from events.models import Event
 
 
 class EventListSerializer(serializers.ModelSerializer):
-    attendees_count = serializers.IntegerField(
-        source="attendees.count"
-    )
+    attendees_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Event
@@ -21,9 +19,7 @@ class EventListSerializer(serializers.ModelSerializer):
 
 
 class EventRetrieveSerializer(serializers.ModelSerializer):
-    attendees_count = serializers.IntegerField(
-        source="attendees.count", read_only=True
-    )
+    attendees_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Event
