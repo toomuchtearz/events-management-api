@@ -1,6 +1,7 @@
 from django.core.mail import send_mail
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -11,10 +12,7 @@ from events.filters import EventFilter
 from events.models import Event
 from events.permissions import IsOrganizerOrReadOnly
 
-from events.serializers import (
-    EventListSerializer,
-    EventRetrieveSerializer
-)
+from events.serializers import EventListSerializer, EventRetrieveSerializer
 
 
 def send_event_registration_mail(user, event):
@@ -74,7 +72,7 @@ class EventViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=["POST"],
         permission_classes=(IsAuthenticated,),
-        url_path="toggle-register"
+        url_path="toggle-register",
     )
     def toggle_register(self, request, pk=None):
         event = self.get_object()
@@ -83,36 +81,41 @@ class EventViewSet(viewsets.ModelViewSet):
         if event.organizer == user:
             return Response(
                 {"detail": "You cannot register for your own event."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if event.attendees.filter(id=user.id).exists():
             event.attendees.remove(user)
             return Response(
                 {"detail": "Successfully unregistered from the event."},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         else:
             event.attendees.add(user)
-            send_event_registration_mail(
-                user=user, event=event
-            )
+            send_event_registration_mail(user=user, event=event)
 
             return Response(
                 {"detail": "Successfully registered for the event."},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
 
-
-    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    @extend_schema(request=None)
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=(IsAuthenticated,)
+    )
     def my(self, request):
         my_events = self.get_queryset().filter(organizer=request.user)
         serializer = self.get_serializer(my_events, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=(IsAuthenticated,)
+    )
     def attending(self, request):
         attending_events = self.get_queryset().filter(attendees=request.user)
         serializer = self.get_serializer(attending_events, many=True)
