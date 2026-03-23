@@ -51,6 +51,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     search_fields = ("title", "description")
     ordering_fields = ("time", "title")
+    ordering = ("-time",)
 
     def get_queryset(self):
         queryset = Event.objects.select_related("organizer").annotate(
