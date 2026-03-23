@@ -5,12 +5,14 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView
 )
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView
+)
 
 
 api_v1_patterns = [
-    path('admin/', admin.site.urls),
-
     path("events/", include("events.urls", namespace="events")),
     path("users/", include("users.urls", namespace="users")),
 
