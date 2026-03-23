@@ -12,7 +12,7 @@ from events.filters import EventFilter
 from events.models import Event
 from events.permissions import IsOrganizerOrReadOnly
 
-from events.serializers import EventListSerializer, EventRetrieveSerializer
+from events.serializers import EventListSerializer, EventRetrieveSerializer, EventToggleSerializer
 
 
 def send_event_registration_mail(user, event):
@@ -65,7 +65,8 @@ class EventViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return EventListSerializer
         if self.action == "toggle_register":
-            return serializers.Serializer
+            return EventToggleSerializer
+
         return EventRetrieveSerializer
 
     @action(
@@ -75,6 +76,13 @@ class EventViewSet(viewsets.ModelViewSet):
         url_path="toggle-register",
     )
     def toggle_register(self, request, pk=None):
+        """
+        Register or unregister the current user for an event.
+        If the user is already registered, they will be removed (unregistered).
+        If they are not registered, they will be added.
+
+        Note: Organizers are not permitted to register for their own events.
+        """
         event = self.get_object()
         user = request.user
 
@@ -99,13 +107,18 @@ class EventViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-    @extend_schema(request=None)
     @action(
         detail=False,
         methods=["GET"],
         permission_classes=(IsAuthenticated,)
     )
     def my(self, request):
+        """
+        List all events created by the current user.
+
+        Returns a collection of events where the authenticated user
+        is the designated organizer.
+        """
         my_events = self.get_queryset().filter(organizer=request.user)
         serializer = self.get_serializer(my_events, many=True)
 
@@ -117,6 +130,12 @@ class EventViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def attending(self, request):
+        """
+        List all events the current user is attending.
+
+        Returns a collection of events where the authenticated user is
+        included in the attendees list.
+        """
         attending_events = self.get_queryset().filter(attendees=request.user)
         serializer = self.get_serializer(attending_events, many=True)
 
