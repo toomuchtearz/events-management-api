@@ -6,7 +6,7 @@ from events.views import EventViewSet
 app_name = "events"
 
 router = routers.DefaultRouter()
-router.register("events", EventViewSet, basename="events")
+router.register("", EventViewSet, basename="events")
 
 urlpatterns = [
     path("", include(router.urls))
