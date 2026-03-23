@@ -42,3 +42,8 @@ class EventRetrieveSerializer(serializers.ModelSerializer):
             "attendees_count",
         )
         read_only_fields = ("organizer",)
+
+
+class EventToggleSerializer(serializers.Serializer):
+    """Empty serializer for the toggle_register action."""
+    pass
