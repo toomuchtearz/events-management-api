@@ -3,14 +3,36 @@ from rest_framework import serializers
 from events.models import Event
 
 
-class EventSerializer(serializers.ModelSerializer):
+class EventListSerializer(serializers.ModelSerializer):
+    attendees_count = serializers.IntegerField(
+        source="attendees.count"
+    )
 
     class Meta:
         model = Event
         fields = (
             "id",
             "title",
-            "description",
             "time",
             "location",
+            "organizer",
+            "attendees_count",
+        )
+
+
+class EventRetrieveSerializer(serializers.ModelSerializer):
+    attendees_count = serializers.IntegerField(
+        source="attendees.count", read_only=True
+    )
+
+    class Meta:
+        model = Event
+        fields = (
+            "id",
+            "title",
+            "time",
+            "location",
+            "description",
+            "organizer",
+            "attendees_count"
         )
